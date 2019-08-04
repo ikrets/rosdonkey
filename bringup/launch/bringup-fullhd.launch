@@ -1,0 +1,7 @@
+<launch>
+    <node type="actuator.py" pkg="donkey_actuator" name="actuator" launch-prefix="nice -20" />
+    <node type="imu_node.py" pkg="mpu_6050_driver" name="imu_node" output="screen" />
+    <node type="pwm_joy_teleop_node.py" pkg="pwm_joy_teleop" name="pwm_joy_teleop_node" launch-prefix="nice -20" output="screen" />
+    <node type="joy_node" pkg="joy" name="joy_node" launch-prefix="nice -20"/>
+    <include file="$(find my_donkey)/launch/camerav1_1280x720_30fps.launch"></include>
+</launch>

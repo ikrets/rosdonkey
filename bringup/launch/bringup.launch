@@ -1,0 +1,23 @@
+<launch>
+    <node type="actuator.py" pkg="donkey_actuator" name="actuator"/>
+    <node type="imu_node.py" pkg="mpu_6050_driver" name="imu_node" output="screen" />
+    <node type="pwm_joy_teleop_node.py" pkg="pwm_joy_teleop" name="pwm_joy_teleop_node" output="screen"/>
+    <node type="joy_node" pkg="joy" name="joy_node"/>
+
+    <node type="raspicam_node" pkg="raspicam_node" name="raspicam_node" output="screen">
+        <param name="camera_frame_id" value="raspicam"/> 
+        <param name="enable_raw" value="false"/> 
+        <param name="camera_id" value="0"/> 
+        <param name="camera_info_url" value="package://my_donkey/camera_info/camerav1_640x480.yaml"/>
+        <param name="camera_name" value="camerav1"/>
+        <param name="width" value="640"/>
+        <param name="height" value="480"/>
+        <param name="framerate" value="36"/>
+    </node>
+    <node name="dynamic_reconfigure_load" pkg="dynamic_reconfigure" type="dynparam" args="load /raspicam_node $(find my_donkey)/params/camera_ss10000.yaml" /> 
+    <node type="lane_segmentation_edgetpu.py" pkg="lane_segmentation" name="lane_segmentation_edgetpu" args="/home/ubuntu/home_model_edgetpu.tflite 19090"/>
+    <node type="lane_segmentation_bridge.py" pkg="lane_segmentation" name="lane_segmentation_bridge">
+        <param name="port" value="19090"/>
+    </node>
+
+</launch>

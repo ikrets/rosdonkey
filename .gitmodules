@@ -1,0 +1,3 @@
+[submodule "mpu_6050_driver"]
+	path = mpu_6050_driver
+	url = ./mpu_6050_driver
