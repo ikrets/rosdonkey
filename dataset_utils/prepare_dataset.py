@@ -7,7 +7,7 @@ from PIL import Image
 from sklearn.model_selection import train_test_split
 from io import BytesIO
 
-from transform import undistort_birdeyeview
+from transform import make_undistort_birdeye
 
 def prepare_file_dataset(folders, dataset_name, transformation=lambda x: x):
     images = []
@@ -15,7 +15,7 @@ def prepare_file_dataset(folders, dataset_name, transformation=lambda x: x):
         images.extend(glob(os.path.join(folder, 'images/*.jpg')))
 
     masks = [i.replace('images', 'masks').replace('jpg', 'png') for i in images]
-    os.makedirs(dataset_name)
+    os.makedirs(dataset_name, exist_ok=True)
 
     for i in range(len(images)):
         folder, name = os.path.split(images[i])
@@ -97,7 +97,22 @@ def prepare_tfrecord_dataset(folder, dataset_name, transformation=lambda x: x):
             tfwriter.write(example.SerializeToString())
 
 if __name__ == '__main__':
+    def expand(img, target_height):
+        if len(img.shape) == 2:
+            img = img[:, :, np.newaxis]
+
+        expanded = np.zeros((target_height, img.shape[1], img.shape[2]), dtype=img.dtype)
+        expanded[-img.shape[0]:, :, :] = img
+
+        return np.squeeze(expanded)
+
+    def resize(img):
+        resized = cv2.resize(img, (320, 240), cv2.INTER_LINEAR)
+        return resized
+
+    undistort_birdeyeview = make_undistort_birdeye(input_shape=(320, 240), target_shape=(32, 48))
+
     prepare_file_dataset(['/home/ilya/random steering/datasets/extracted',
                           '/home/ilya/random steering/datasets/extracted-sayat'],
-                         '/home/ilya/random steering/datasets/transformed',
-                         undistort_birdeyeview)
+                         '/home/ilya/random steering/datasets/transformed-resized320x240-to32x48',
+                         lambda img: undistort_birdeyeview(resize(expand(img, target_height=480))))

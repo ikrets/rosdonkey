@@ -14,20 +14,19 @@ def make_undistort_birdeye(input_shape, target_shape):
     dst = np.array([[-9, 8], [-5, 28], [5, 20], [2, 8]], dtype=np.float32)
 
     src *= input_shape[0] / DIM[0]
-    dst *= target_shape[0] / 96
+    dst *= target_shape[1] / 96
+    desired_size = target_shape
+    dst[:, 0] += desired_size[1] / 2
 
     K *= input_shape[0] / DIM[0]
     K[2, 2] = 1.
-
-    desired_size = target_shape
-    dst[:, 0] += desired_size[1] / 2
 
     nK = K.copy()
     nK[0, 0] /= 2
     nK[1, 1] /= 2
 
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3),
-                                                     nK, DIM, cv2.CV_16SC2)
+                                                     nK, input_shape, cv2.CV_16SC2)
     undistort = lambda img: cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR)
 
     perspective_transform = cv2.getPerspectiveTransform(src, dst)
