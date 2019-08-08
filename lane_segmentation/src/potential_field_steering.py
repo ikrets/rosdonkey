@@ -4,9 +4,9 @@ from time import time
 from PIL import Image
 import cv2
 
-downsample = 4
+downsample = 1
 
-all_points = np.array([(x, y) for x in range(0, 29, downsample) for y in range(0, 96, downsample)])
+all_points = np.array([(x, y) for x in range(0, 32, downsample) for y in range(0, 48, downsample)])
 all_points = all_points.reshape((-1, 2))
 
 
@@ -68,7 +68,7 @@ def compute_path_on_fly(lane):
 
         coords[max_field_index] = np.clip(coords[max_field_index], 0, None)
         prev_step = coords[max_field_index] - [x, y]
-        x, y = coords[max_field_index] + 2 * prev_step
+        x, y = coords[max_field_index] + prev_step
 
     return path
 
@@ -93,13 +93,6 @@ def compute_path(field):
     while y > 3 and y < path.shape[1] - 1 and x < path.shape[0] - 1 and max_it != 0:
         max_it -= 1
         path[x, y] = 1
-        #         direction = -start + [x, y]
-        #         angle = np.arctan2(direction[1], direction[0])
-        #         angle = np.fmod(angle, np.pi / 4) * np.pi / 4
-        #         coords = np.array([[np.cos(angle), np.sin(angle)], [np.cos(angle + np.pi / 4), np.sin(angle + np.pi /4)],
-        #                           [np.cos(angle - np.pi / 4), np.sin(angle + np.pi / 4)]])
-        #         coords = np.round(coords).astype(np.uint8)
-        #         coords = [x, y] + coords
 
         if not prev_step[0]:
             coords = np.array([[1, 0], [0, prev_step[1]], [1, prev_step[1]]])
@@ -141,7 +134,6 @@ def compute_polynom(path):
     w[0] = 10000
 
     return np.polyfit(x, y, deg=2, w=w)
-
 
 
 def compute_path_on_fly(lane):

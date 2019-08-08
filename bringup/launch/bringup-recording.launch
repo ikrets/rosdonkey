@@ -1,7 +1,4 @@
 <launch>
-    <arg name="segmentation_model"/>
-    <arg name="segmentation_bridge_port" value="19090"/>
-
     <node type="actuator.py" pkg="donkey_actuator" name="actuator"/>
     <node type="imu_node.py" pkg="mpu_6050_driver" name="imu_node" output="screen" />
     <node type="pwm_joy_teleop_node.py" pkg="pwm_joy_teleop" name="pwm_joy_teleop_node" output="screen"/>
@@ -15,12 +12,8 @@
         <param name="camera_name" value="camerav1"/>
         <param name="width" value="320"/>
         <param name="height" value="240"/>
-        <param name="framerate" value="36"/>
+        <param name="framerate" value="60"/>
     </node>
     <node name="dynamic_reconfigure_load" pkg="dynamic_reconfigure" type="dynparam" args="load /raspicam_node $(find bringup)/params/camera_ss10000.yaml" /> 
-    <node type="lane_segmentation_edgetpu.py" pkg="lane_segmentation" name="lane_segmentation_edgetpu" args="$(arg segmentation_model) $(arg segmentation_bridge_port)" output="screen"/>
-    <node type="lane_segmentation_bridge.py" pkg="lane_segmentation" name="lane_segmentation_bridge" output="screen"> 
-        <param name="port" value="$(arg segmentation_bridge_port)"/>
-    </node> 
 
 </launch>
