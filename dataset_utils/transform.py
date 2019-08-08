@@ -12,7 +12,7 @@ src = np.array([[208, 376], [278, 274], [337, 298], [323, 378]], dtype=np.float3
 # y forward x to the right
 dst = np.array([[-9, 8], [-5, 28], [5, 20], [2, 8]], dtype=np.float32)
 
-desired_size = (56, 96)
+desired_size = (64, 96)
 dst[:, 0] += desired_size[1] / 2
 
 nK = K.copy()
