@@ -13,12 +13,12 @@ def make_undistort_birdeye(input_shape, target_shape):
     # y forward x to the right
     dst = np.array([[-9, 8], [-5, 28], [5, 20], [2, 8]], dtype=np.float32)
 
-    src *= input_shape[0] / DIM[0]
-    dst *= target_shape[1] / 96
+    src *= float(input_shape[0]) / DIM[0]
+    dst *= float(target_shape[1]) / 96
     desired_size = target_shape
-    dst[:, 0] += desired_size[1] / 2
+    dst[:, 0] += float(desired_size[1]) / 2
 
-    K *= input_shape[0] / DIM[0]
+    K *= float(input_shape[0]) / DIM[0]
     K[2, 2] = 1.
 
     nK = K.copy()
