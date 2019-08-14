@@ -7,6 +7,7 @@ https://github.com/autorope/donkeycar/
 import rospy
 from donkey_actuator.msg import DonkeyDrive
 from donkey_actuator.msg import Control
+from time import sleep
 
 class PCA9685:
     """
@@ -19,6 +20,7 @@ class PCA9685:
         self.pwm = Adafruit_PCA9685.PCA9685()
         self.pwm.set_pwm_freq(frequency)
         self.channel = channel
+        sleep(0.1)
 
     def set_pulse(self, pulse):
         try:

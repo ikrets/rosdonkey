@@ -8,8 +8,8 @@ if __name__ == '__main__':
     drive_publisher = rospy.Publisher("donkey_drive", DonkeyDrive)
     control_publisher = rospy.Publisher("control", Control)
 
-    constant_throttle = 0.1
-    throttle_increase = 0.1
+    constant_throttle = 0.01
+    throttle_increase = 0.01
 
     def joy_callback(joy_msg):
         global constant_throttle
@@ -24,6 +24,7 @@ if __name__ == '__main__':
 
         if joy_msg.buttons[6] or joy_msg.buttons[7]:
             constant_throttle += (1 if joy_msg.buttons[7] else -1) * throttle_increase
+            constant_throttle = min(constant_throttle, 1)
             control.set_constant_throttle = constant_throttle
             control_changed = True
 

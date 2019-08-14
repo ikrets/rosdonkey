@@ -16,6 +16,7 @@ from sensor_msgs.msg import CompressedImage
 from donkey_actuator.msg import DonkeyDrive
 from potential_field_steering import compute_path_on_fly, compute_polynom
 import zmq
+from time import time
 
 import sys
 # TODO fast hacked for now
@@ -37,25 +38,32 @@ if __name__ == "__main__":
     decoded_img = np.empty((240, 320, 3), dtype=np.uint8)
     transformed_img = np.empty((32, 48, 3), dtype=np.uint8)
     def callback(img):
+        t1 = time()
         decoded_img = cv2.imdecode(np.fromstring(img.data, np.uint8), 1)
         # The camera has a weird white line on the right edge.
         decoded_img[:, -2:, :] = 0
         undistort_birdeyeview(decoded_img, dst=transformed_img)
+        t2 = time()
 
 	socket.send(transformed_img.tobytes())
 	img_bytes = socket.recv()
+        t3 = time()
 
         img = np.frombuffer(img_bytes, dtype=np.bool).reshape((32, 48))
 
         path = compute_path_on_fly(img)
+        t4 = time()
+
         polynom = compute_polynom(path)
         angle = polynom[1]
+        t5 = time()
 
         drive = DonkeyDrive()
         drive.source = 'simple_steering'
         drive.use_constant_throttle = True
         drive.steering = np.clip(angle / (np.pi / 4), -1, 1)
         drive_publisher.publish(drive)
+        t6 = time()
 
         vis = path[:, :, np.newaxis] * np.array([0, 0, 255], dtype=np.uint8)[np.newaxis, np.newaxis, :]
         vis += img[:, :, np.newaxis] * np.array([0, 255, 0], dtype=np.uint8)[np.newaxis, np.newaxis, :]
@@ -73,6 +81,10 @@ if __name__ == "__main__":
             img_msg.format = 'png'
             img_msg.data = fp.getvalue()
             publisher.publish(img_msg)
+            t7 = time()
+
+        rospy.loginfo('Open: {:0.4f}, inference: {:0.4f}, path: {:0.4f}, polynom: {:0.4f}, drive publish: {:0.4f}, publish vis: {:0.4f}'.format(
+            t2 - t1, t3 - t2, t4 - t3, t5 - t4, t6 - t5, t7 - t6)) 
 
     subscriber = rospy.Subscriber("/raspicam_node/image/compressed", 
 	CompressedImage, callback, queue_size=1)
