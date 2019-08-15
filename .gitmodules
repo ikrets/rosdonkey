@@ -1,3 +1,6 @@
 [submodule "mpu_6050_driver"]
 	path = mpu_6050_driver
-	url = ./mpu_6050_driver
+	url = https://github.com/OSUrobotics/mpu_6050_driver.git
+[submodule "raspicam_node"]
+	path = raspicam_node
+	url = https://github.com/UbiquityRobotics/raspicam_node.git

@@ -9,6 +9,7 @@
 import cv2
 
 import rospy
+import rospkg
 from PIL import Image
 import numpy as np
 from io import BytesIO
@@ -18,8 +19,8 @@ from potential_field_steering import compute_path_on_fly, compute_polynom
 import zmq
 
 import sys
-# TODO fast hacked for now
-sys.path.append('/home/ubuntu/rosdonkey/src/dataset_utils')
+sys.path.append(rospkg.RosPack().get_path('dataset_utils'))
+
 from transform import make_undistort_birdeye
 
 if __name__ == "__main__":
@@ -76,7 +77,9 @@ if __name__ == "__main__":
 
     subscriber = rospy.Subscriber("/raspicam_node/image/compressed", 
 	CompressedImage, callback, queue_size=1)
-    publisher = rospy.Publisher('/lane_segmentation/image/compressed', CompressedImage)
-    drive_publisher = rospy.Publisher('/donkey_drive', DonkeyDrive)
+    publisher = rospy.Publisher('/lane_segmentation/image/compressed', CompressedImage,
+            queue_size=1)
+    drive_publisher = rospy.Publisher('/donkey_drive', DonkeyDrive,
+            queue_size=1)
 
     rospy.spin()
