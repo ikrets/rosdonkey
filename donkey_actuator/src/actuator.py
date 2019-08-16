@@ -95,9 +95,11 @@ if __name__ == "__main__":
 
         if control.set_constant_throttle:
             constant_throttle = control.set_constant_throttle
+            rospy.loginfo('Changing constant throttle to {}'.format(constant_throttle))
 
         if control.set_actuator_source:
             actuator_source = control.set_actuator_source
+            rospy.loginfo('Changing actuator source to {}'.format(actuator_source))
 
     subscriber = rospy.Subscriber("donkey_drive", DonkeyDrive, drive_callback)
     control_subscriber = rospy.Subscriber("control", Control, control_callback)
