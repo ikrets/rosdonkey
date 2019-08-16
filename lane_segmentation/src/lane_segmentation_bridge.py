@@ -9,6 +9,7 @@
 import cv2
 
 import rospy
+import rospkg
 from PIL import Image
 import numpy as np
 from io import BytesIO
@@ -16,11 +17,10 @@ from sensor_msgs.msg import CompressedImage
 from donkey_actuator.msg import DonkeyDrive
 from potential_field_steering import compute_path_on_fly, compute_polynom
 import zmq
-from time import time
 
 import sys
-# TODO fast hacked for now
-sys.path.append('/home/ubuntu/rosdonkey/src/dataset_utils')
+sys.path.append(rospkg.RosPack().get_path('dataset_utils'))
+
 from transform import make_undistort_birdeye
 
 if __name__ == "__main__":
@@ -81,14 +81,12 @@ if __name__ == "__main__":
             img_msg.format = 'png'
             img_msg.data = fp.getvalue()
             publisher.publish(img_msg)
-            t7 = time()
-
-        rospy.loginfo('Open: {:0.4f}, inference: {:0.4f}, path: {:0.4f}, polynom: {:0.4f}, drive publish: {:0.4f}, publish vis: {:0.4f}'.format(
-            t2 - t1, t3 - t2, t4 - t3, t5 - t4, t6 - t5, t7 - t6)) 
 
     subscriber = rospy.Subscriber("/raspicam_node/image/compressed", 
 	CompressedImage, callback, queue_size=1)
-    publisher = rospy.Publisher('/lane_segmentation/image/compressed', CompressedImage)
-    drive_publisher = rospy.Publisher('/donkey_drive', DonkeyDrive)
+    publisher = rospy.Publisher('/lane_segmentation/image/compressed', CompressedImage,
+            queue_size=1)
+    drive_publisher = rospy.Publisher('/donkey_drive', DonkeyDrive,
+            queue_size=1)
 
     rospy.spin()
