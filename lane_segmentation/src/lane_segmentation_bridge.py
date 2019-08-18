@@ -15,7 +15,7 @@ import numpy as np
 from io import BytesIO
 from sensor_msgs.msg import CompressedImage
 from donkey_actuator.msg import DonkeyDrive
-from potential_field_steering import compute_path_on_fly, compute_polynom
+from potential_field_steering import compute_path_on_fly, compute_polynom, linear_attract_repel_field
 import zmq
 
 import sys
@@ -36,7 +36,16 @@ if __name__ == "__main__":
     rospy.get_param('port', 19090)
 
     decoded_img = np.empty((240, 320, 3), dtype=np.uint8)
-    transformed_img = np.empty((32, 48, 3), dtype=np.uint8)
+    transformed_img = np.empty((64, 96, 3), dtype=np.uint8)
+    resized_lanes = np.empty((32, 48), dtype=np.bool)
+
+    field = lambda x: linear_attract_repel_field(x,
+                                                 attract_level=10,
+                                                 attract_value=12,
+                                                 attract_width=3,
+                                                 repel_level=-40,
+                                                 repel_width=7)
+
     def callback(img):
         decoded_img = cv2.imdecode(np.fromstring(img.data, np.uint8), 1)
         # The camera has a weird white line on the right edge.
@@ -46,9 +55,10 @@ if __name__ == "__main__":
         socket.send(transformed_img.tobytes())
         img_bytes = socket.recv()
 
-        img = np.frombuffer(img_bytes, dtype=np.bool).reshape((32, 48))
+        img = np.frombuffer(img_bytes, dtype=np.bool).reshape((64, 96))
+        cv2.resize(img, (48, 32), dst=resized_lanes)
 
-        path = compute_path_on_fly(img)
+        path = compute_path_on_fly(resized_lanes, field, ignore_border=10, steps=2)
         polynom = compute_polynom(path)
         angle = polynom[1]
 
@@ -59,7 +69,7 @@ if __name__ == "__main__":
         drive_publisher.publish(drive)
 
         vis = path[:, :, np.newaxis] * np.array([0, 0, 255], dtype=np.uint8)[np.newaxis, np.newaxis, :]
-        vis += img[:, :, np.newaxis] * np.array([0, 255, 0], dtype=np.uint8)[np.newaxis, np.newaxis, :]
+        vis += resized_lanes[:, :, np.newaxis] * np.array([0, 255, 0], dtype=np.uint8)[np.newaxis, np.newaxis, :]
 
         poly_x = np.arange(32)
         poly_y = np.polyval(polynom, poly_x).astype(np.uint8)
