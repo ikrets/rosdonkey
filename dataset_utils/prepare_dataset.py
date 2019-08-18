@@ -9,7 +9,8 @@ from io import BytesIO
 
 from transform import make_undistort_birdeye
 
-def prepare_file_dataset(folders, dataset_name, transformation=lambda x: x):
+
+def prepare_file_dataset(folders, dataset_name, image_transformation, mask_transformation):
     images = []
     for folder in folders:
         images.extend(glob(os.path.join(folder, 'images/*.jpg')))
@@ -24,15 +25,16 @@ def prepare_file_dataset(folders, dataset_name, transformation=lambda x: x):
         img = np.array(Image.open(images[i]))
         img[:, -2:, :] = 0
 
-        img = transformation(img)
+        img = image_transformation(img)
         img = Image.fromarray(img)
         img.save(os.path.join(dataset_name, name + '_img.png'))
 
         mask = np.array(Image.open(masks[i]))
         mask[:, -2:] = 0
-        mask = transformation(mask)
+        mask = mask_transformation(mask)
         mask = Image.fromarray(mask)
         mask.save(os.path.join(dataset_name, name + '_mask.png'))
+
 
 def prepare_tfrecord_dataset(folder, dataset_name, transformation=lambda x: x):
     images = sorted(glob(os.path.join(folder, 'images/*.jpg')))
@@ -96,23 +98,31 @@ def prepare_tfrecord_dataset(folder, dataset_name, transformation=lambda x: x):
         for example in val:
             tfwriter.write(example.SerializeToString())
 
+
 if __name__ == '__main__':
-    def expand(img, target_height):
+    def expand(img, target_height_ratio):
         if len(img.shape) == 2:
             img = img[:, :, np.newaxis]
 
-        expanded = np.zeros((target_height, img.shape[1], img.shape[2]), dtype=img.dtype)
+        expanded = np.zeros((int(target_height_ratio * img.shape[1]), img.shape[1], img.shape[2]), dtype=img.dtype)
         expanded[-img.shape[0]:, :, :] = img
 
         return np.squeeze(expanded)
+
 
     def resize(img):
         resized = cv2.resize(img, (320, 240), cv2.INTER_LINEAR)
         return resized
 
+
+
+
     undistort_birdeyeview = make_undistort_birdeye(input_shape=(320, 240), target_shape=(32, 48))
 
-    prepare_file_dataset(['/home/ilya/random steering/datasets/extracted',
-                          '/home/ilya/random steering/datasets/extracted-sayat'],
-                         '/home/ilya/random steering/datasets/transformed-resized320x240-to32x48',
-                         lambda img: undistort_birdeyeview(resize(expand(img, target_height=480))))
+    prepare_file_dataset(['/home/ilya/random steering/datasets/extracted_17_08'],
+                         '/home/ilya/random steering/datasets/transformed_17_08',
+                         image_transformation=lambda img: undistort_birdeyeview(
+                             resize(expand(img, target_height_ratio=480 / 640))),
+                         mask_transformation=lambda img: undistort_birdeyeview(
+                             resize(expand(img, target_height_ratio=480 / 640)),
+                             undistort_interpolation=cv2.INTER_LINEAR))

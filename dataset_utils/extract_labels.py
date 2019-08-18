@@ -32,16 +32,24 @@ for item in requests.get('http://localhost:3000/api/listing').json():
 
     filename = os.path.join(base_dir, item['folder'], item['file'])
     if not os.path.exists(filename):
+        print('Missing {}'.format(filename))
         continue
 
     img = Image.open(filename)
-    img = img.crop(crop)
+    original_img_size = img.size
+    assert(640 % img.size[0] == 0)
+    assert(480 % img.size[1] == 0)
+    assert(img.size[0] / 640 == img.size[1] / 480)
+
+    adjusted_crop = tuple(int(c * img.size[0] / 640) for c in crop)
+
+    img = img.crop(adjusted_crop)
     image_bytes = BytesIO()
     img.save(image_bytes, format='PNG')
     output_filename = '{}_{}'.format(item['folder'].replace('/', '-'), item['file'])
 
     labels = requests.get('http://localhost:3000/api/json' + item['url']).json()
-    mask = np.zeros((480, 640), dtype=np.uint8)
+    mask = np.zeros(original_img_size[::-1], dtype=np.uint8)
 
     class1 = 0
     for label in labels['objects']:
@@ -53,9 +61,10 @@ for item in requests.get('http://localhost:3000/api/listing').json():
             ys.append(point['y'])
 
         p = polygon(xs, ys)
-        mask[p[1], p[0]] = 1
+        p_inside_img = (p[0] >= 0) & (p[0] < original_img_size[0]) & (p[1] >= 0) & (p[1] < original_img_size[1])
+        mask[p[1][p_inside_img], p[0][p_inside_img]] = 1
 
-    mask = mask[crop[1]:crop[3], crop[0]:crop[2]]
+    mask = mask[adjusted_crop[1]:adjusted_crop[3], adjusted_crop[0]:adjusted_crop[2]]
     _, mask_bytes = cv2.imencode('.png', mask)
 
     img.save(os.path.join(output_dir, 'images', output_filename))
