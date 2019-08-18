@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     while True:
         img_bytes = socket.recv()
-        img = np.frombuffer(img_bytes, np.uint8).reshape((32, 48, 3))
+        img = np.frombuffer(img_bytes, np.uint8).reshape((64, 96, 3))
 
         latency, result = engine.segment(img)
 

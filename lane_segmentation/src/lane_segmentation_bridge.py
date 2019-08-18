@@ -26,7 +26,7 @@ from transform import make_undistort_birdeye
 if __name__ == "__main__":
     undistort_birdeyeview = make_undistort_birdeye(
         input_shape=(320, 240),
-        target_shape=(32, 48))
+        target_shape=(64, 96))
 
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     decoded_img = np.empty((240, 320, 3), dtype=np.uint8)
     transformed_img = np.empty((64, 96, 3), dtype=np.uint8)
-    resized_lanes = np.empty((32, 48), dtype=np.bool)
+    resized_lanes = np.empty((32, 48), dtype=np.uint8)
 
     field = lambda x: linear_attract_repel_field(x,
                                                  attract_level=10,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         img_bytes = socket.recv()
 
         img = np.frombuffer(img_bytes, dtype=np.bool).reshape((64, 96))
-        cv2.resize(img, (48, 32), dst=resized_lanes)
+        cv2.resize(img.astype(np.uint8), (48, 32), dst=resized_lanes)
 
         path = compute_path_on_fly(resized_lanes, field, ignore_border=10, steps=2)
         polynom = compute_polynom(path)

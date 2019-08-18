@@ -48,10 +48,10 @@ def make_undistort_birdeye(input_shape, target_shape):
     undistorted_img = np.empty((input_shape[1], input_shape[0], 3), dtype=np.uint8)
     def undistort_birdeye(img, dst=None, undistort_interpolation=cv2.INTER_NEAREST):
         img = cv2.remap(img, map1, map2, interpolation=undistort_interpolation, dst=undistorted_img)
-        if not dst:
-            return cv2.remap(img, trans_map_x, trans_map_y, interpolation=cv2.INTER_LINEAR)
+        if dst is None:
+            return cv2.remap(undistorted_img, trans_map_x, trans_map_y, interpolation=cv2.INTER_LINEAR)
         else:
-            cv2.remap(img, trans_map_x, trans_map_y, dst=dst, interpolation=cv2.INTER_LINEAR)
+            cv2.remap(undistorted_img, trans_map_x, trans_map_y, dst=dst, interpolation=cv2.INTER_LINEAR)
 
     return undistort_birdeye
 
