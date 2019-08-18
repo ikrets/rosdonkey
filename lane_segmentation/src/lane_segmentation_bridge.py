@@ -43,8 +43,8 @@ if __name__ == "__main__":
         decoded_img[:, -2:, :] = 0
         undistort_birdeyeview(decoded_img, dst=transformed_img)
 
-	socket.send(transformed_img.tobytes())
-	img_bytes = socket.recv()
+        socket.send(transformed_img.tobytes())
+        img_bytes = socket.recv()
 
         img = np.frombuffer(img_bytes, dtype=np.bool).reshape((32, 48))
 

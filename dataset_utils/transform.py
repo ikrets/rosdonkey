@@ -27,9 +27,6 @@ def make_undistort_birdeye(input_shape, target_shape):
 
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3),
                                                      nK, input_shape, cv2.CV_16SC2)
-    undistort = lambda img, dst: cv2.remap(img, map1, map2, 
-        interpolation=cv2.INTER_NEAREST,
-        dst=dst)
 
     perspective_transform = cv2.getPerspectiveTransform(src, dst)
     iTM = cv2.invert(perspective_transform)[1]
@@ -47,14 +44,14 @@ def make_undistort_birdeye(input_shape, target_shape):
             trans_map_y[y, x] = (iTM[1, 0] * fx + iTM[1, 1] * fy + iTM[1, 2]) * w
 
     trans_map_x, trans_map_y = cv2.convertMaps(trans_map_x, trans_map_y, cv2.CV_16SC2)
-    birdeye = lambda img, dst: cv2.remap(img, trans_map_x, trans_map_y, 
-        interpolation=cv2.INTER_LINEAR,
-        dst=dst)
 
-    def undistort_birdeye(img, dst):
-        undistorted_img = np.empty((input_shape[1], input_shape[0], 3), dtype=np.uint8)
-        undistort(img, undistorted_img)
-        birdeye(undistorted_img, dst)
+    undistorted_img = np.empty((input_shape[1], input_shape[0], 3), dtype=np.uint8)
+    def undistort_birdeye(img, dst=None, undistort_interpolation=cv2.INTER_NEAREST):
+        img = cv2.remap(img, map1, map2, interpolation=undistort_interpolation, dst=undistorted_img)
+        if not dst:
+            return cv2.remap(img, trans_map_x, trans_map_y, interpolation=cv2.INTER_LINEAR)
+        else:
+            cv2.remap(img, trans_map_x, trans_map_y, dst=dst, interpolation=cv2.INTER_LINEAR)
 
     return undistort_birdeye
 
