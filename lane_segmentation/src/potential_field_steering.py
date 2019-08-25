@@ -18,40 +18,60 @@ def linear_attract_repel_field(x,
 
 def compute_path_on_fly(lane, f, ignore_border=20, steps=4):
     path = np.zeros_like(lane)
-    x = 0
+
     y = path.shape[1] // 2
-    prev_step = [1, 0]
-    max_it = 1000
+    x = 0
+
+    prev_step = [steps, 0]
+    max_it = 100
 
     lane = np.stack(np.where(lane), axis=1)
     distances_from_center = np.sqrt(np.linalg.norm(
         lane, axis=-1, ord=1
     ))[np.newaxis, :]
 
+    going_back_steps = 0
+
     while y > ignore_border and y < path.shape[1] - ignore_border and x < path.shape[0] - ignore_border and max_it != 0:
         max_it -= 1
         path[x, y] = 1
 
+        if prev_step[0] < 0:
+            going_back_steps += 1
+        else:
+            going_back_steps = 0
+
+        if going_back_steps > 3:
+            break
+
         if not prev_step[0]:
-            coords = np.array([[1, 0], [0, prev_step[1]], [1, prev_step[1]]])
+            coords = np.array([[-steps, prev_step[1]], [0, prev_step[1]], [steps, prev_step[1]]])
         elif not prev_step[1]:
-            coords = np.array([[prev_step[0], -1], [prev_step[0], 0], [prev_step[0], 1]])
+            coords = np.array([[prev_step[0], -steps], [prev_step[0], 0], [prev_step[0], steps]])
         else:
             coords = np.array([[prev_step[0], prev_step[1]], [prev_step[0], 0], [0, prev_step[1]]])
         coords += [x, y]
 
-        coords = coords[np.logical_and(coords[:, 0] > 0, coords[:, 1] > 0)]
-
-        distances = np.linalg.norm(coords[:, np.newaxis] - lane[np.newaxis, :], axis=-1, ord=1)
-
+        distances = np.linalg.norm(coords[:, np.newaxis] - lane[np.newaxis, :], axis=-1, ord=2)
         field = np.sum(distances_from_center * f(distances), axis=-1)
         max_field_index = np.argmax(field)
 
         coords[max_field_index] = np.clip(coords[max_field_index], 0, None)
         prev_step = coords[max_field_index] - [x, y]
-        x, y = coords[max_field_index] + (steps - 1) * prev_step
+        x, y = coords[max_field_index]
 
-    return path
+    exit = 'stuck'
+
+    if y <= ignore_border:
+        exit = 'left'
+
+    if y >= path.shape[1] - ignore_border:
+        exit = 'right'
+
+    if x >= path.shape[0] - ignore_border:
+        exit = 'center'
+
+    return path, exit
 
 
 def compute_path_polynom(lane_mask):
