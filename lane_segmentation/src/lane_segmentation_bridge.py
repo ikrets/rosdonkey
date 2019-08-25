@@ -46,7 +46,12 @@ if __name__ == "__main__":
                                                  repel_level=-100,
                                                  repel_width=7)
 
+    current_ticks_without_throttle = 0
+    max_ticks_without_throttle = 2
+
     def callback(img):
+        global current_ticks_without_throttle
+
         decoded_img = cv2.imdecode(np.fromstring(img.data, np.uint8), 1)
         # The camera has a weird white line on the right edge.
         decoded_img[:, -2:, :] = 0
@@ -62,11 +67,19 @@ if __name__ == "__main__":
 
         drive = DonkeyDrive()
         drive.source = 'simple_steering'
+        max_steering_angle = np.pi / 4
+
+        if current_ticks_without_throttle == max_ticks_without_throttle and exit != 'center':
+            exit = 'center'
+            current_ticks_without_throttle = 0
 
         if exit == 'center':
             polynom = compute_polynom(path)
             drive.steering = np.clip(polynom[1] / max_steering_angle, -1, 1)
             drive.use_constant_throttle = True
+        else:
+            current_ticks_without_throttle += 1
+
         if exit == 'stuck':
             polynom = compute_polynom(path)
             drive.steering = np.clip(polynom[1] / max_steering_angle, -1, 1)
