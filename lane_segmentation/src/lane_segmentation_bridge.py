@@ -58,24 +58,33 @@ if __name__ == "__main__":
         img = np.frombuffer(img_bytes, dtype=np.bool).reshape((64, 96))
         cv2.resize(img.astype(np.uint8), (48, 32), dst=resized_lanes)
 
-        path = compute_path_on_fly(resized_lanes, field, ignore_border=10, steps=2)
-        polynom = compute_polynom(path)
-        angle = polynom[1]
+        path, exit = compute_path_on_fly(resized_lanes, field, ignore_border=10, steps=2)
 
         drive = DonkeyDrive()
         drive.source = 'simple_steering'
-        drive.use_constant_throttle = True
-        drive.steering = np.clip(angle / (np.pi / 4), -1, 1)
+
+        if exit == 'center':
+            polynom = compute_polynom(path)
+            drive.steering = np.clip(polynom[1] / max_steering_angle, -1, 1)
+            drive.use_constant_throttle = True
+        if exit == 'stuck':
+            polynom = compute_polynom(path)
+            drive.steering = np.clip(polynom[1] / max_steering_angle, -1, 1)
+            drive.use_constant_throttle = False
+            drive.throttle = 0
+        if exit == 'left':
+            drive.steering = -1
+            drive.use_constant_throttle = False
+            drive.throttle = 0
+        if exit == 'right':
+            drive.steering = 1
+            drive.use_constant_throttle = False
+            drive.throttle = 0
+
         drive_publisher.publish(drive)
 
-        vis = path[:, :, np.newaxis] * np.array([0, 0, 255], dtype=np.uint8)[np.newaxis, np.newaxis, :]
+        vis = path[:, :, np.newaxis] * np.array([255, 0, 0], dtype=np.uint8)[np.newaxis, np.newaxis, :]
         vis += resized_lanes[:, :, np.newaxis] * np.array([0, 255, 0], dtype=np.uint8)[np.newaxis, np.newaxis, :]
-
-        poly_x = np.arange(32)
-        poly_y = np.polyval(polynom, poly_x).astype(np.uint8)
-        inside = (poly_y >= 0) & (poly_y < 48)
-
-        vis[poly_x[inside], poly_y[inside], :] = np.array([255, 0, 0], dtype=np.uint8)
 
         with BytesIO() as fp:
             Image.fromarray(vis).save(fp, format='PNG')
