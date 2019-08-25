@@ -17,6 +17,7 @@ from sensor_msgs.msg import CompressedImage
 from donkey_actuator.msg import DonkeyDrive
 from potential_field_steering import compute_path_on_fly, compute_polynom, linear_attract_repel_field
 import zmq
+from controller import SmoothingController
 
 import sys
 sys.path.append(rospkg.RosPack().get_path('dataset_utils'))
@@ -30,10 +31,12 @@ if __name__ == "__main__":
 
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect('tcp://127.0.0.1:19090')
+    port = rospy.get_param('port', 19090)
+    socket.connect('tcp://127.0.0.1:{}'.format(port))
 
     rospy.init_node("lane_inference_bridge")
-    rospy.get_param('port', 19090)
+    error_decay = rospy.get_param('error_decay', 0.95)
+    gain = rospy.get_param('gain', 1)
 
     decoded_img = np.empty((240, 320, 3), dtype=np.uint8)
     transformed_img = np.empty((64, 96, 3), dtype=np.uint8)
@@ -45,6 +48,9 @@ if __name__ == "__main__":
                                                  attract_width=6,
                                                  repel_level=-100,
                                                  repel_width=7)
+
+    controller = SmoothingController(K=np.exp([-error_decay * i for i in range(3)]),
+                                     gain=gain)
 
     current_ticks_without_throttle = 0
     max_ticks_without_throttle = 2
@@ -75,22 +81,24 @@ if __name__ == "__main__":
 
         if exit == 'center':
             polynom = compute_polynom(path)
-            drive.steering = np.clip(polynom[1] / max_steering_angle, -1, 1)
+            drive.steering = controller.control(target=np.clip(polynom[1] / max_steering_angle, -1, 1),
+                                                current=0)
             drive.use_constant_throttle = True
         else:
             current_ticks_without_throttle += 1
 
         if exit == 'stuck':
             polynom = compute_polynom(path)
-            drive.steering = np.clip(polynom[1] / max_steering_angle, -1, 1)
+            drive.steering = controller.control(target=np.clip(polynom[1] / max_steering_angle, -1, 1),
+                                                current=0)
             drive.use_constant_throttle = False
             drive.throttle = 0
         if exit == 'left':
-            drive.steering = -1
+            drive.steering = controller.control(target=-1, current=0)
             drive.use_constant_throttle = False
             drive.throttle = 0
         if exit == 'right':
-            drive.steering = 1
+            drive.steering = controller.control(target=1, current=0)
             drive.use_constant_throttle = False
             drive.throttle = 0
 
