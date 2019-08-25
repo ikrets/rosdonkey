@@ -60,18 +60,7 @@ def compute_path_on_fly(lane, f, ignore_border=20, steps=4):
         prev_step = coords[max_field_index] - [x, y]
         x, y = coords[max_field_index]
 
-    exit = 'stuck'
-
-    if y <= ignore_border:
-        exit = 'left'
-
-    if y >= path.shape[1] - ignore_border:
-        exit = 'right'
-
-    if x >= path.shape[0] - ignore_border:
-        exit = 'center'
-
-    return path, exit
+    return path, [x, y]
 
 
 def compute_path_polynom(lane_mask):
@@ -92,12 +81,12 @@ def compute_path_polynom(lane_mask):
     return np.polyfit(x, y, deg=2, w=w)
 
 
-def compute_polynom(path):
+def compute_polynom(path, deg):
     x, y = np.where(path)
     w = np.ones_like(x)
     w[0] = 10000
 
-    return np.polyfit(x, y, deg=2, w=w)
+    return np.polyfit(x, y, deg=deg, w=w)
 
 
 if __name__ == '__main__':
