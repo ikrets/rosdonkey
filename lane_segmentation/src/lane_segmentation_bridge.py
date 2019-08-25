@@ -50,7 +50,7 @@ if __name__ == "__main__":
         decoded_img = cv2.imdecode(np.fromstring(img.data, np.uint8), 1)
         # The camera has a weird white line on the right edge.
         decoded_img[:, -2:, :] = 0
-        undistort_birdeyeview(decoded_img, dst=transformed_img)
+        undistort_birdeyeview(decoded_img, dst=transformed_img, undistort_interpolation=cv2.INTER_LINEAR)
 
         socket.send(transformed_img.tobytes())
         img_bytes = socket.recv()
