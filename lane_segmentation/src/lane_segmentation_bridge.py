@@ -41,9 +41,9 @@ if __name__ == "__main__":
 
     field = lambda x: linear_attract_repel_field(x,
                                                  attract_level=10,
-                                                 attract_value=12,
-                                                 attract_width=3,
-                                                 repel_level=-40,
+                                                 attract_value=13,
+                                                 attract_width=6,
+                                                 repel_level=-100,
                                                  repel_width=7)
 
     def callback(img):
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         img = np.frombuffer(img_bytes, dtype=np.bool).reshape((64, 96))
         cv2.resize(img.astype(np.uint8), (48, 32), dst=resized_lanes)
 
-        path, exit = compute_path_on_fly(resized_lanes, field, ignore_border=10, steps=2)
+        path, exit = compute_path_on_fly(resized_lanes, field, ignore_border=5, steps=2)
 
         drive = DonkeyDrive()
         drive.source = 'simple_steering'
