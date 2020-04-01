@@ -22,7 +22,7 @@ class SegmentationEngine(BasicEngine):
         _, height, width, _ = input_tensor_shape
 
         input_tensor = np.asarray(img).flatten()
-        latency, result = self.RunInference(input_tensor)
+        latency, result = self.run_inference(input_tensor)
         result = result.reshape((height, width, -1))
 
         return latency, result
