@@ -1,6 +1,6 @@
 # Autonomous RC car
 
-![Demo of an RC car driving around a track](docs/demo-video.gif)
+<a href="https://www.youtube.com/watch?v=FrvwCto3qIY">![Demo of an RC car driving around a track](docs/demo-video.gif)</a>
 
 Drive on a track using semantic segmentation to find lanes.
 
