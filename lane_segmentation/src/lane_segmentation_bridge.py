@@ -11,7 +11,7 @@ from PIL import Image
 import numpy as np
 from io import BytesIO
 from sensor_msgs.msg import CompressedImage
-from pwm_joy_teleop.msg import DonkeyDrive
+from donkey_actuator.msg import DonkeyDrive
 from potential_field_steering import compute_path_on_fly, compute_polynom
 import zmq
 
@@ -38,6 +38,13 @@ if __name__ == "__main__":
 
         path = compute_path_on_fly(img)
         polynom = compute_polynom(path)
+        angle = polynom[1]
+
+        drive = DonkeyDrive()
+        drive.source = 'simple_steering'
+        drive.use_constant_throttle = True
+        drive.steering = np.clip(angle / (np.pi / 4), -1, 1)
+        drive_publisher.publish(drive)
 
         vis = path[:, :, np.newaxis] * np.array([0, 0, 255], dtype=np.uint8)[np.newaxis, np.newaxis, :]
         vis += img[:, :, np.newaxis] * np.array([0, 255, 0], dtype=np.uint8)[np.newaxis, np.newaxis, :]
@@ -59,5 +66,6 @@ if __name__ == "__main__":
     subscriber = rospy.Subscriber("/raspicam_node/image/compressed", 
 	CompressedImage, callback, queue_size=1)
     publisher = rospy.Publisher('/lane_segmentation/image/compressed', CompressedImage)
+    drive_publisher = rospy.Publisher('/donkey_drive', DonkeyDrive)
 
     rospy.spin()

@@ -5,7 +5,8 @@ https://github.com/autorope/donkeycar/
 """
 
 import rospy
-from pwm_joy_teleop.msg import DonkeyDrive
+from donkey_actuator.msg import DonkeyDrive
+from donkey_actuator.msg import Control
 
 class PCA9685:
     """
@@ -48,7 +49,19 @@ if __name__ == "__main__":
     throttle = PCA9685(1)
     throttle.set_pulse(zero_throttle)
 
+    constant_throttle = 0.1
+    actuator_source = 'joystick'
+
     def drive_callback(donkey_drive):
+        global constant_throttle
+        global actuator_source
+
+        if donkey_drive.source != actuator_source:
+            return
+
+        if donkey_drive.use_constant_throttle:
+            donkey_drive.throttle = constant_throttle
+
 	if donkey_drive.throttle > 0:
 	    throttle_command = start_positive_throttle + (max_positive_throttle - start_positive_throttle) * donkey_drive.throttle
 	elif donkey_drive.throttle < 0:
@@ -76,6 +89,17 @@ if __name__ == "__main__":
 	steering.set_pulse(int(steering_command))
 	throttle.set_pulse(int(throttle_command))
 
+    def control_callback(control):
+        global constant_throttle
+        global actuator_source
+
+        if control.set_constant_throttle:
+            constant_throttle = control.set_constant_throttle
+
+        if control.set_actuator_source:
+            actuator_source = control.set_actuator_source
+
     subscriber = rospy.Subscriber("donkey_drive", DonkeyDrive, drive_callback)
+    control_subscriber = rospy.Subscriber("control", Control, control_callback)
 
     rospy.spin()

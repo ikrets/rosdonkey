@@ -7,7 +7,7 @@ project(pwm_joy_teleop)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED message_generation std_msgs rospy)
+find_package(catkin REQUIRED std_msgs rospy)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -43,10 +43,6 @@ find_package(catkin REQUIRED message_generation std_msgs rospy)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  DonkeyDrive.msg
-)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
