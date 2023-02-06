@@ -11,6 +11,8 @@ from PIL import Image
 import numpy as np
 from io import BytesIO
 from sensor_msgs.msg import CompressedImage
+from pwm_joy_teleop.msg import DonkeyDrive
+from potential_field_steering import compute_path_on_fly, compute_polynom
 import zmq
 
 if __name__ == "__main__":
@@ -29,14 +31,33 @@ if __name__ == "__main__":
             img = np.array(img)
 
 	socket.send(img.tobytes())
-	img_bytes = socket.recv()
 
-	img_msg = CompressedImage()
-	img_msg.format = 'png'
-	img_msg.data = img_bytes
-	publisher.publish(img_msg)
+	img_bytes = socket.recv()
+        img = np.frombuffer(img_bytes, dtype=np.bool)
+        img = img.reshape((32, 48))
+
+        path = compute_path_on_fly(img)
+        polynom = compute_polynom(path)
+
+        vis = path[:, :, np.newaxis] * np.array([0, 0, 255], dtype=np.uint8)[np.newaxis, np.newaxis, :]
+        vis += img[:, :, np.newaxis] * np.array([0, 255, 0], dtype=np.uint8)[np.newaxis, np.newaxis, :]
+
+        poly_x = np.arange(32)
+        poly_y = np.polyval(polynom, poly_x).astype(np.uint8)
+        inside = (poly_y >= 0) & (poly_y < 48)
+
+        vis[poly_x[inside], poly_y[inside], :] = np.array([255, 0, 0], dtype=np.uint8)
+
+        with BytesIO() as fp:
+            Image.fromarray(vis).save(fp, format='PNG')
+
+            img_msg = CompressedImage()
+            img_msg.format = 'png'
+            img_msg.data = fp.getvalue()
+            publisher.publish(img_msg)
 
     subscriber = rospy.Subscriber("/raspicam_node/image/compressed", 
 	CompressedImage, callback, queue_size=1)
     publisher = rospy.Publisher('/lane_segmentation/image/compressed', CompressedImage)
+
     rospy.spin()

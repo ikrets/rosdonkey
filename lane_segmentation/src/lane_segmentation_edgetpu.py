@@ -4,12 +4,17 @@ import sys
 # Needed to clear up PYTHONPATH from 2.7 python libraries
 sys.path = [p for p in sys.path if '2.7' not in p]
 
+# TODO fast hacked for now
+sys.path.append('/home/ubuntu/rosdonkey/src/dataset_utils')
+from transform import make_undistort_birdeye
+
 import numpy as np
 from PIL import Image
 from io import BytesIO
 from edgetpu.basic.basic_engine import BasicEngine
 import zmq
-from transform import undistort_birdeyeview
+import cv2
+from time import time
 
 class SegmentationEngine(BasicEngine):
     def __init__(self, model_path):
@@ -26,6 +31,10 @@ class SegmentationEngine(BasicEngine):
         return latency, result
 
 if __name__ == '__main__':
+    undistort_birdeyeview = make_undistort_birdeye(
+        input_shape=(320, 240),
+        target_shape=(32, 48))
+
     engine = SegmentationEngine(sys.argv[1])
 
     context = zmq.Context()
@@ -36,18 +45,15 @@ if __name__ == '__main__':
         img_bytes = socket.recv()
 
         img = np.frombuffer(img_bytes, dtype=np.uint8)
-        img = img.reshape(480, 640, 3).copy()
+        img = img.reshape(240, 320, 3).copy()
 
         # The camera has a weird white line on the right edge.
         img[:, -2:, :] = 0
-
-        img = undistort_birdeyeview(img[-256:, :, :])
-
-        _, result = engine.segment(img)
+        img = undistort_birdeyeview(img)
+        latency, result = engine.segment(img)
 
         with BytesIO() as fp:
-            result = np.squeeze(result)
-            img = Image.fromarray(result * 255).convert('RGB')
-            img.save(fp, format='PNG')
+            result = np.squeeze(result > 0.5)
+            fp.write(result.tobytes())
             fp.seek(0)
             socket.send(fp.read())
