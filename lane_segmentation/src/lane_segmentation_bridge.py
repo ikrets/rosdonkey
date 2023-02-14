@@ -6,6 +6,8 @@
 # Edge TPU Python API is Python 3 only and ROS is
 # Python 2 only.
 
+import cv2
+
 import rospy
 from PIL import Image
 import numpy as np
@@ -15,7 +17,16 @@ from donkey_actuator.msg import DonkeyDrive
 from potential_field_steering import compute_path_on_fly, compute_polynom
 import zmq
 
+import sys
+# TODO fast hacked for now
+sys.path.append('/home/ubuntu/rosdonkey/src/dataset_utils')
+from transform import make_undistort_birdeye
+
 if __name__ == "__main__":
+    undistort_birdeyeview = make_undistort_birdeye(
+        input_shape=(320, 240),
+        target_shape=(32, 48))
+
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect('tcp://127.0.0.1:19090')
@@ -23,18 +34,18 @@ if __name__ == "__main__":
     rospy.init_node("lane_inference_bridge")
     rospy.get_param('port', 19090)
 
+    decoded_img = np.empty((240, 320, 3), dtype=np.uint8)
+    transformed_img = np.empty((32, 48, 3), dtype=np.uint8)
     def callback(img):
-        # Converting image -> array here as there are weird problems
-        # with Pillow in Python 3
-        with BytesIO(img.data) as fp:
-            img = Image.open(fp).convert('RGB')
-            img = np.array(img)
+        decoded_img = cv2.imdecode(np.fromstring(img.data, np.uint8), 1)
+        # The camera has a weird white line on the right edge.
+        decoded_img[:, -2:, :] = 0
+        undistort_birdeyeview(decoded_img, dst=transformed_img)
 
-	socket.send(img.tobytes())
-
+	socket.send(transformed_img.tobytes())
 	img_bytes = socket.recv()
-        img = np.frombuffer(img_bytes, dtype=np.bool)
-        img = img.reshape((32, 48))
+
+        img = np.frombuffer(img_bytes, dtype=np.bool).reshape((32, 48))
 
         path = compute_path_on_fly(img)
         polynom = compute_polynom(path)
